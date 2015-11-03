@@ -17,9 +17,9 @@ class ApiClient {
     }
 
     void updateGame(id, x, y, user, callback) {
-        HttpRequest.getString('/api/games/update/?id=${id}&x=${y}&y=${x}&username=${user}')
+        HttpRequest.getString('/api/games/update/?id=${id}&x=${x}&y=${y}&username=${user}')
             .then((String response) => callback(JSON.decode(response)))
-            .catchError((Error error) => window.alert(error.toString()));
+            .catchError((error) => window.alert(error.target.responseText));
     }
 
 }
@@ -89,9 +89,15 @@ class App {
                         newLastKnownGameId = game["id"];
                     }
                     var element = new LIElement();
+                    var message = '<b>${game["users"][0]}</b> vs <b>${game["users"][1]}</b>';
+                    if (game.containsKey("winner")) {
+                        var tag1 = game["winner"] == 'x' ? "b" : "s";
+                        var tag2 = game["winner"] == 'o' ? "b" : "s";
+                        message = '<${tag1}>${game["users"][0]}</${tag1}> vs <${tag2}>${game["users"][1]}</${tag2}>';
+                    }
                     element.children.add(new AnchorElement()
                         ..href = '#'
-                        ..innerHtml = '<b>${game["users"][0]}</b> vs <b>${game["users"][1]}</b>');
+                        ..innerHtml = message);
                     element.children[0].onClick.listen((event) {
                         x = 0;
                         y = 0;
@@ -141,7 +147,11 @@ class App {
     }
 
     void updateGame(id, x, y, user) {
-        print('Updating ${id} on ${x}.${y} (${user})');
+        print(user);
+        api.updateGame(id, x, y, user, (var response) {
+            print(response);
+            loadGame(currentGame);
+        });
     }
 
     void newGame() {
