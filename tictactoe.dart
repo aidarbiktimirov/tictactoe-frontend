@@ -57,6 +57,15 @@ class App {
 
     void run() {
         listGames();
+        autoUpdate();
+    }
+
+    void autoUpdate() {
+        print(currentGame);
+        if (currentGame != -1) {
+            loadGame(currentGame);
+        }
+        new Timer(const Duration(seconds: 5), autoUpdate);
     }
 
     void makeBusy() {
@@ -102,6 +111,11 @@ class App {
                         x = 0;
                         y = 0;
                         loadGame(game["id"]);
+                        var activeElement = querySelector('.active');
+                        if (activeElement != null) {
+                            activeElement.classes.remove('active');
+                        }
+                        event.target.parent.classes.add('active');
                     });
                     gameList.children.insert(0, element);
                 }
