@@ -3,21 +3,28 @@ import 'dart:async';
 import 'dart:convert';
 
 class ApiClient {
+
     ApiClient() {
     }
 
     void listGames(callback) {
-        HttpRequest.getString('/api/games/list/')
+        HttpRequest.getString('/tictactoe/api/games/list/')
             .then((String response) => callback(JSON.decode(response)));
     }
 
     void loadGame(id, x, y, w, h, callback) {
-        HttpRequest.getString('/api/games/show/?id=${id}&x=${y}&y=${x}&width=${h}&height=${w}')
+        HttpRequest.getString('/tictactoe/api/games/show/?id=${id}&x=${y}&y=${x}&width=${h}&height=${w}') // XSS :(
             .then((String response) => callback(JSON.decode(response)));
     }
 
     void updateGame(id, x, y, user, callback) {
-        HttpRequest.getString('/api/games/update/?id=${id}&x=${x}&y=${y}&username=${user}')
+        HttpRequest.getString('/tictactoe/api/games/update/?id=${id}&x=${x}&y=${y}&username=${user}')
+            .then((String response) => callback(JSON.decode(response)))
+            .catchError((error) => window.alert(error.target.responseText));
+    }
+
+    void newGame(playerX, playerO, callback) {
+        HttpRequest.getString('/tictactoe/api/games/new/?playerX=${playerX}&playerO=${playerO}')
             .then((String response) => callback(JSON.decode(response)))
             .catchError((error) => window.alert(error.target.responseText));
     }
@@ -30,6 +37,7 @@ class App {
     var field;
     var fieldControls;
     var newGameBtn;
+    var newGamePlayers;
     var api;
     var lastKnownGameId;
     var busy;
@@ -41,7 +49,7 @@ class App {
     static const fieldWidth = 30;
     static const fieldHeight = 20;
 
-    App(this.gameList, this.username, this.field, this.fieldControls, this.newGameBtn) {
+    App(this.gameList, this.username, this.field, this.fieldControls, this.newGameBtn, this.newGamePlayers) {
         api = new ApiClient();
         lastKnownGameId = -1;
         busy = false;
@@ -53,6 +61,7 @@ class App {
             control.disabled = true;
             control.onClick.listen((event) => moveField(controlDeltas[i]));
         }
+        newGameBtn.onClick.listen((event) => newGame());
     }
 
     void run() {
@@ -66,6 +75,18 @@ class App {
             loadGame(currentGame);
         }
         new Timer(const Duration(seconds: 5), autoUpdate);
+    }
+
+    void newGame() {
+        var playerX = newGamePlayers[0].value;
+        var playerO = newGamePlayers[1].value;
+        if (playerX == '' || playerO == '') {
+            return;
+        }
+        api.newGame(playerX, playerO, (result) {});
+        newGamePlayers[0].value = '';
+        newGamePlayers[1].value = '';
+        window.location.reload();
     }
 
     void makeBusy() {
@@ -168,10 +189,6 @@ class App {
         });
     }
 
-    void newGame() {
-        content.children.clear();
-    }
-
     void moveField(var delta) {
         if (currentGame == -1) {
             window.alert('No game is loaded');
@@ -189,6 +206,7 @@ main() {
     var field = querySelector('#field');
     var fieldControls = [querySelector('#move_up'), querySelector('#move_right'), querySelector('#move_down'), querySelector('#move_left')];
     var newGameBtn = querySelector('#new_game');
-    var app = new App(gameList, username, field, fieldControls, newGameBtn);
+    var newGamePlayers = [querySelector('#new_game_x'), querySelector('#new_game_o')];
+    var app = new App(gameList, username, field, fieldControls, newGameBtn, newGamePlayers);
     app.run();
 }
